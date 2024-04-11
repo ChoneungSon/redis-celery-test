@@ -31,7 +31,7 @@ services:
       - .:/usr/tagby-consumer
     container_name: worker1
     restart: always
-    command: "celery -A worker.worker worker -l info -E --concurrency=1 -Ofair"
+    command: "celery -A worker.worker worker -l info -E --concurrency=3 -Ofair"
     depends_on:
       - redis
 
@@ -43,7 +43,7 @@ services:
       - .:/usr/tagby-consumer
     container_name: worker2
     restart: always
-    command: "celery -A worker.worker worker -l info -E --concurrency=1 -Ofair"
+    command: "celery -A worker.worker worker -l info -E --concurrency=3 -Ofair"
     depends_on:
       - redis
 
@@ -55,7 +55,7 @@ services:
       - .:/usr/tagby-consumer
     container_name: worker3
     restart: always
-    command: "celery -A worker.worker worker -l info -E --concurrency=1 -Ofair"
+    command: "celery -A worker.worker worker -l info -E --concurrency=3 -Ofair"
     depends_on:
       - redis
 

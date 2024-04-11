@@ -2,9 +2,10 @@ import os
 from time import sleep
 from datetime import datetime
 from worker.worker import app
+from worker.middleware import OnFailureTask
 
 
-@app.task(priority=0)
+@app.task(base=OnFailureTask, priority=0)
 def dummy_task(t: int):
     folder = "celery"
     os.makedirs(folder, exist_ok=True)
@@ -14,7 +15,8 @@ def dummy_task(t: int):
         f.write("Hello, world!")
 
 
-@app.task(priority=5)
+# authoretry_for=(ValueError,)
+@app.task(base=OnFailureTask, priority=5, retry_kwargs={"max_retries": 5})
 def dummy_fail(t: int):
     sleep(t)
     raise ValueError("This task always fails.")
