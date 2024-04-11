@@ -1,0 +1,109 @@
+version: '3'
+
+services:
+  redis:
+    networks:
+      - network_name
+    image: redis
+    container_name: redis
+    restart: always
+
+  api:
+    build: .
+    networks:
+      - network_name
+    container_name: api
+    restart: always
+    command: "uvicorn app:app --reload --host 0.0.0.0 --port 8002 --workers=1"
+    ports:
+      - 8002:8002
+    depends_on:
+      - redis
+      - worker1
+      - worker2
+      - worker3
+
+  worker1:
+    build: .
+    networks:
+      - network_name
+    volumes:
+      - .:/usr/tagby-consumer
+    container_name: worker1
+    restart: always
+    command: "celery -A worker.worker worker -l info -E --concurrency=1 -Ofair"
+    depends_on:
+      - redis
+
+  worker2:
+    build: .
+    networks:
+      - network_name
+    volumes:
+      - .:/usr/tagby-consumer
+    container_name: worker2
+    restart: always
+    command: "celery -A worker.worker worker -l info -E --concurrency=1 -Ofair"
+    depends_on:
+      - redis
+
+  worker3:
+    build: .
+    networks:
+      - network_name
+    volumes:
+      - .:/usr/tagby-consumer
+    container_name: worker3
+    restart: always
+    command: "celery -A worker.worker worker -l info -E --concurrency=1 -Ofair"
+    depends_on:
+      - redis
+
+  prometheus:
+    image: prom/prometheus
+    networks:
+      - network_name
+    container_name: prometheus
+    restart: always
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - 9090:9090
+    depends_on:
+      - flower
+
+  flower:  
+    image: mher/flower
+    networks:
+      - network_name
+    container_name: flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379//
+      - FLOWER_PORT=5555
+    ports:  
+      - 5555:5555
+    depends_on:
+      - worker1
+      - worker2
+      - worker3
+
+  grafana:
+    image: grafana/grafana
+    networks:
+      - network_name
+    container_name: grafana
+    restart: always
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+
+networks:
+  network_name:
+    driver: bridge
